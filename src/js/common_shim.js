@@ -169,13 +169,16 @@ module.exports = {
             // messages. Thus, supporting ~2 GiB when sending.
             canSendMaxMessageSize = 2147483637;
           }
-        } else {
+        } else if (browserDetails.version < 60) {
           // Currently, all FF >= 57 will reset the remote maximum message size
           // to the default value when a data channel is created at a later
           // stage. :(
           // See: https://bugzilla.mozilla.org/show_bug.cgi?id=1426831
           canSendMaxMessageSize =
             browserDetails.version === 57 ? 65535 : 65536;
+        } else {
+          // FF >= 60 supports sending ~2 GiB
+          canSendMaxMessageSize = 2147483637;
         }
       }
       return canSendMaxMessageSize;
@@ -249,7 +252,8 @@ module.exports = {
   },
 
   shimSendThrowTypeError: function(window) {
-    if (!window.RTCPeerConnection) {
+    if (!(window.RTCPeerConnection &&
+        'createDataChannel' in window.RTCPeerConnection.prototype)) {
       return;
     }
 
@@ -257,26 +261,30 @@ module.exports = {
     //       message size can be reset for all data channels at a later stage.
     //       See: https://bugzilla.mozilla.org/show_bug.cgi?id=1426831
 
+    function wrapDcSend(dc, pc) {
+      var origDataChannelSend = dc.send;
+      dc.send = function() {
+        var data = arguments[0];
+        var length = data.length || data.size || data.byteLength;
+        if (dc.readyState === 'open' &&
+            pc.sctp && length > pc.sctp.maxMessageSize) {
+          throw new TypeError('Message too large (can send a maximum of ' +
+            pc.sctp.maxMessageSize + ' bytes)');
+        }
+        return origDataChannelSend.apply(dc, arguments);
+      };
+    }
     var origCreateDataChannel =
       window.RTCPeerConnection.prototype.createDataChannel;
     window.RTCPeerConnection.prototype.createDataChannel = function() {
       var pc = this;
       var dataChannel = origCreateDataChannel.apply(pc, arguments);
-      var origDataChannelSend = dataChannel.send;
-
-      // Patch 'send' method
-      dataChannel.send = function() {
-        var dc = this;
-        var data = arguments[0];
-        var length = data.length || data.size || data.byteLength;
-        if (length > pc.sctp.maxMessageSize) {
-          throw new DOMException('Message too large (can send a maximum of ' +
-            pc.sctp.maxMessageSize + ' bytes)', 'TypeError');
-        }
-        return origDataChannelSend.apply(dc, arguments);
-      };
-
+      wrapDcSend(dataChannel, pc);
       return dataChannel;
     };
+    utils.wrapPeerConnectionEvent(window, 'datachannel', function(e) {
+      wrapDcSend(e.channel, e.target);
+      return e;
+    });
   }
 };
