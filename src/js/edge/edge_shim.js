@@ -9,6 +9,7 @@
 'use strict';
 
 var utils = require('../utils');
+var filterIceServers = require('./filtericeservers');
 var shimRTCPeerConnection = require('rtcpeerconnection-shim');
 
 module.exports = {
@@ -66,8 +67,15 @@ module.exports = {
       window.RTCDTMFSender = window.RTCDtmfSender;
     }
 
-    window.RTCPeerConnection =
-        shimRTCPeerConnection(window, browserDetails.version);
+    var RTCPeerConnectionShim = shimRTCPeerConnection(window,
+        browserDetails.version);
+    window.RTCPeerConnection = function(config) {
+      if (config && config.iceServers) {
+        config.iceServers = filterIceServers(config.iceServers);
+      }
+      return new RTCPeerConnectionShim(config);
+    };
+    window.RTCPeerConnection.prototype = RTCPeerConnectionShim.prototype;
   },
   shimReplaceTrack: function(window) {
     // ORTC has replaceTrack -- https://github.com/w3c/ortc/issues/614
@@ -76,5 +84,21 @@ module.exports = {
       window.RTCRtpSender.prototype.replaceTrack =
           window.RTCRtpSender.prototype.setTrack;
     }
+  },
+  shimGetDisplayMedia: function(window, preferredMediaSource) {
+    if (!('getDisplayMedia' in window.navigator) ||
+        !window.navigator.mediaDevices ||
+        'getDisplayMedia' in window.navigator.mediaDevices) {
+      return;
+    }
+    var origGetDisplayMedia = window.navigator.getDisplayMedia;
+    window.navigator.mediaDevices.getDisplayMedia = function(constraints) {
+      return origGetDisplayMedia.call(window.navigator, constraints);
+    };
+    window.navigator.getDisplayMedia = function(constraints) {
+      utils.deprecated('navigator.getDisplayMedia',
+          'navigator.mediaDevices.getDisplayMedia');
+      return origGetDisplayMedia.call(window.navigator, constraints);
+    };
   }
 };

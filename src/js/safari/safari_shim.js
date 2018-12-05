@@ -102,12 +102,17 @@ module.exports = {
           return this._onaddstream;
         },
         set: function(f) {
-          var pc = this;
           if (this._onaddstream) {
             this.removeEventListener('addstream', this._onaddstream);
-            this.removeEventListener('track', this._onaddstreampoly);
           }
           this.addEventListener('addstream', this._onaddstream = f);
+        }
+      });
+      var origSetRemoteDescription =
+          window.RTCPeerConnection.prototype.setRemoteDescription;
+      window.RTCPeerConnection.prototype.setRemoteDescription = function() {
+        var pc = this;
+        if (!this._onaddstreampoly) {
           this.addEventListener('track', this._onaddstreampoly = function(e) {
             e.streams.forEach(function(stream) {
               if (!pc._remoteStreams) {
@@ -123,7 +128,8 @@ module.exports = {
             });
           });
         }
-      });
+        return origSetRemoteDescription.apply(pc, arguments);
+      };
     }
   },
   shimCallbacksAPI: function(window) {
@@ -255,6 +261,10 @@ module.exports = {
     window.RTCPeerConnection.prototype.createOffer = function(offerOptions) {
       var pc = this;
       if (offerOptions) {
+        if (typeof offerOptions.offerToReceiveAudio !== 'undefined') {
+          // support bit values
+          offerOptions.offerToReceiveAudio = !!offerOptions.offerToReceiveAudio;
+        }
         var audioTransceiver = pc.getTransceivers().find(function(transceiver) {
           return transceiver.sender.track &&
               transceiver.sender.track.kind === 'audio';
@@ -278,6 +288,11 @@ module.exports = {
           pc.addTransceiver('audio');
         }
 
+
+        if (typeof offerOptions.offerToReceiveVideo !== 'undefined') {
+          // support bit values
+          offerOptions.offerToReceiveVideo = !!offerOptions.offerToReceiveVideo;
+        }
         var videoTransceiver = pc.getTransceivers().find(function(transceiver) {
           return transceiver.sender.track &&
               transceiver.sender.track.kind === 'video';
