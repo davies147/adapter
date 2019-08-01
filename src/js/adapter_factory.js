@@ -97,7 +97,6 @@ export function adapterFactory({window} = {}, options = {
       edgeShim.shimGetDisplayMedia(window);
       edgeShim.shimPeerConnection(window);
       edgeShim.shimReplaceTrack(window);
-      edgeShim.shimGetDisplayMedia(window);
 
       // the edge shim implements the full RTCIceCandidate object.
 
