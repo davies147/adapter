@@ -61,19 +61,22 @@ let chromeFlags = [
 if (process.env.CHROMEEXPERIMENT !== 'false') {
   chromeFlags.push('--enable-experimental-web-platform-features');
 }
+if (process.env.PLANB) {
+  chromeFlags.push('--disable-features=RTCUnifiedPlanByDefault');
+}
 
 module.exports = function(config) {
   config.set({
     basePath: '..',
     frameworks: ['browserify', 'mocha', 'chai'],
     files: [
-      'src/js/adapter_core.js',
+      'dist/adapter_core5.js',
       'test/getusermedia-mocha.js',
       'test/e2e/*.js',
     ],
     exclude: [],
     preprocessors: {
-      'src/js/adapter_core.js': ['browserify']
+      'dist/adapter_core5.js': ['browserify']
     },
     reporters,
     port: 9876,
@@ -110,7 +113,8 @@ module.exports = function(config) {
       path: 'test/e2e/expectations/' +
           process.env.BROWSER +
           (process.env.BVER ? '-' + process.env.BVER : '') +
-          (process.env.CHROMEEXPERIMENT === 'false' ? '-no-experimental' : ''),
+          (process.env.CHROMEEXPERIMENT === 'false' ? '-no-experimental' : '') +
+          (process.env.PLANB ? '-planb' : ''),
       update: process.env.UPDATE_STABILITYREPORTER || false,
     }
   });

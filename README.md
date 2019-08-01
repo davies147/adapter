@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/webrtcHacks/adapter.svg)](https://travis-ci.org/webrtc/adapter)
+[![Build Status](https://travis-ci.org/webrtcHacks/adapter.svg)](https://travis-ci.org/webrtcHacks/adapter)
 
 # WebRTC adapter #
 adapter.js is a shim to insulate apps from spec changes and prefix differences. In fact, the standards and protocols used for WebRTC implementations are highly stable, and there are only a few prefixed names. For full interop information, see [webrtc.org/web-apis/interop](https://www.webrtc.org/web-apis/interop).
@@ -19,6 +19,13 @@ bower install webrtc-adapter
 ```
 
 ## Usage ##
+##### Javascript
+Just import adapter:
+```
+import adapter from 'webrtc-adapter';
+```
+No further action is required.
+
 ##### NPM
 Copy to desired location in your src tree or use a minify/vulcanize tool (node_modules is usually not published with the code).
 See [webrtc/samples repo](https://github.com/webrtc/samples) as an example on how you can do this.
@@ -52,7 +59,7 @@ Head over to [test/README.md](https://github.com/webrtcHacks/adapter/blob/gh-pag
 * Go to the releases tab in the GitHub web ui and edit the tag.
 * Add a summary of the recent commits in the tag summary and a link to the diff between the previous and current version in the description, [example](https://github.com/webrtcHacks/adapter/releases/tag/v3.4.1).
 * Go back to your checkout and run `git pull`
-* Run `npm publish` (you need access to the [webrtc-adapter npmjs package](https://www.npmjs.com/package/webrtc-adapter))
+* Run `npm publish` (you need access to the [webrtc-adapter npmjs package](https://www.npmjs.com/package/webrtc-adapter)). For big changes, consider using a [tag version](https://docs.npmjs.com/adding-dist-tags-to-packages) such as `next` and then [change the dist-tag after testing](https://docs.npmjs.com/cli/dist-tag).
 * Done! There should now be a new release published to NPM and the gh-pages branch.
 
 Note: Currently only tested on Linux, not sure about Mac but will definitely not work on Windows.

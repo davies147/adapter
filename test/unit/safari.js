@@ -13,7 +13,7 @@ const sinonChai = require('sinon-chai');
 chai.use(sinonChai);
 
 describe('Safari shim', () => {
-  const shim = require('../../src/js/safari/safari_shim');
+  const shim = require('../../dist/safari/safari_shim');
   let window;
 
   beforeEach(() => {
@@ -31,49 +31,47 @@ describe('Safari shim', () => {
 
     it('shimStreamsAPI existence', () => {
       const prototype = window.RTCPeerConnection.prototype;
-      expect(prototype.addTrack.length).to.equal(2);
+      expect(prototype.addTrack.length).to.equal(1);
       expect(prototype.addStream.length).to.equal(1);
       expect(prototype.removeStream.length).to.equal(1);
       expect(prototype.getLocalStreams.length).to.equal(0);
-      expect(prototype.getStreamById.length).to.equal(1);
       expect(prototype.getRemoteStreams.length).to.equal(0);
     });
     it('local streams API', () => {
       const pc = new window.RTCPeerConnection();
-      pc.getSenders = () => {
-        return [];
+      pc.getSenders = () => [];
+      const stream = {
+        id: 'id1',
+        getTracks: () => [],
+        getAudioTracks: () => [],
+        getVideoTracks: () => [],
       };
-      var stream = {id: 'id1', getTracks: () => {
-        return [];
-      }};
-      expect(pc.getStreamById(stream.id)).to.equal(null);
       expect(pc.getLocalStreams().length).to.equal(0);
       expect(pc.getRemoteStreams().length).to.equal(0);
 
       pc.addStream(stream);
-      expect(pc.getStreamById(stream.id)).to.equal(stream);
       expect(pc.getLocalStreams()[0]).to.equal(stream);
       expect(pc.getRemoteStreams().length).to.equal(0);
 
-      var stream2 = {id: 'id2', getTracks: stream.getTracks};
+      const stream2 = {
+        id: 'id2',
+        getTracks: () => [],
+        getAudioTracks: () => [],
+        getVideoTracks: () => [],
+      };
       pc.removeStream(stream2);
-      expect(pc.getStreamById(stream.id)).to.equal(stream);
       expect(pc.getLocalStreams()[0]).to.equal(stream);
 
       pc.addTrack({}, stream2);
-      expect(pc.getStreamById(stream.id)).to.equal(stream);
-      expect(pc.getStreamById(stream2.id)).to.equal(stream2);
       expect(pc.getLocalStreams().length).to.equal(2);
       expect(pc.getLocalStreams()[0]).to.equal(stream);
       expect(pc.getLocalStreams()[1]).to.equal(stream2);
 
       pc.removeStream(stream2);
-      expect(pc.getStreamById(stream.id)).to.equal(stream);
       expect(pc.getLocalStreams().length).to.equal(1);
       expect(pc.getLocalStreams()[0]).to.equal(stream);
 
       pc.removeStream(stream);
-      expect(pc.getStreamById(stream.id)).to.equal(null);
       expect(pc.getLocalStreams().length).to.equal(0);
     });
   });
