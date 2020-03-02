@@ -675,6 +675,10 @@ export function shimPeerConnection(window) {
     return;
   }
 
+  const addIceCandidateNullSupported =
+    window.RTCPeerConnection &&
+    window.RTCPeerConnection.prototype.addIceCandidate.length === 0;
+
   // shim implicit creation of RTCSessionDescription/RTCIceCandidate
   if (browserDetails.version < 53) {
     ['setLocalDescription', 'setRemoteDescription', 'addIceCandidate']
@@ -695,7 +699,7 @@ export function shimPeerConnection(window) {
       window.RTCPeerConnection.prototype.addIceCandidate;
   window.RTCPeerConnection.prototype.addIceCandidate =
     function addIceCandidate() {
-      if (!arguments[0]) {
+      if (!addIceCandidateNullSupported && !arguments[0]) {
         if (arguments[1]) {
           arguments[1].apply(null);
         }
